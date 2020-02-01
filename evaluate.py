@@ -1,5 +1,4 @@
 import torch
-from data_loader import f
 import numpy as np
 import matplotlib.pyplot as plt
 import gym
@@ -22,8 +21,9 @@ xs = np.zeros((H,x_dim))
 xs_hat = np.zeros((H,x_dim))
 
 for i in range(H):
-    u, _ = pi.predict(x)#env.action_space.sample()
-    x_hat_next = model.predict(x_hat, u)
+    
+    u, _  = pi.predict(x)#np.zeros(env.action_space.sample().shape)
+    x_hat_next = modle.predict(x_hat, u)
     x_next, r, done, _ = env.step(u)
     #env.render()
     xs[i,:] = x_next

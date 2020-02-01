@@ -43,16 +43,7 @@ class TrajDataset(Dataset):
         
         return np.array(initial_states), np.array(input_controls), np.array(out_states)
 
-
-
-def f(x,u):
-    #A = np.transpose(np.array([[1,1],[0,0]]))
-    #B = np.transpose(np.array([[0],[1]]))
-    dt = 0.1
-
-    return x*dt*1 + u*dt*0.1
-
-def linear_gen_with_noise(env, L):
+def gym_gen(env, L):
     T = L
     x_dim = len(env.observation_space.low)
     u_dim = len(env.action_space.low)
@@ -65,7 +56,8 @@ def linear_gen_with_noise(env, L):
         if done:
             x = env.reset()
             news[i] = 1
-        u = env.action_space.sample()
+        # zero control for testing VI
+        u = np.zeros(env.action_space.sample().shape)
         states[i,:] = x
         controls[i,:] = u
         x,r,done,_ = env.step(u)
