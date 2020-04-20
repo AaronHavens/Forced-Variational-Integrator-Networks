@@ -15,6 +15,35 @@ def multistep_predict_loss(model, x0, u, x):
     return loss
 
 
+def imitation_loss(model,x, u):
+    return torch.mean(torch.pow(model(x)-u, 2))
+
+
+class ImitatePolicy(nn.Module):
+
+    def __init__(self, x_dim, u_dim, hid_units):
+        super(ImitatePolicy, self).__init__()
+        
+        self.f1  = nn.Linear(x_dim, hid_units)
+        self.f2  = nn.Linear(hid_units, hid_units)
+        self.out  = nn.Linear(hid_units, u_dim, bias=True)
+    
+    def predict(self, x_):
+
+        x = np.expand_dims(x_,axis=0)
+        x = torch.from_numpy(x).float()
+        with torch.no_grad():
+            u = self.forward(x)
+        return u.numpy()[0]
+    
+    def forward(self, x):
+        h1 = F.relu(self.f1(x.float()))
+        h2 = F.relu(self.f2(h1))
+        out = self.out(h2)
+
+        return out.double()
+
+
 class ResPredict(nn.Module):
 
     def __init__(self, x_dim, u_dim, hid_units):
@@ -43,11 +72,11 @@ class ResPredict(nn.Module):
         with torch.no_grad():
             cost += torch.norm(x[:, :3], p=2, dim=1)
             cost += 0.001*torch.norm(u, p=2, dim=1)
-       # with torch.no_grad():
-       #     theta = torch.atan2(x[:,1],x[:,0])
-       #     cost += torch.pow(theta,2)
-       #     cost += 0.1*torch.pow(x[:,2], 2)
-       #     cost += 0.001*torch.pow(u[:,0], 2)
+        #with torch.no_grad():
+        #    theta = torch.atan2(x[:,1],x[:,0])
+        #    cost += torch.pow(theta,2)
+        #    cost += 0.1*torch.pow(x[:,2], 2)
+        #    cost += 0.001*torch.pow(u[:,0], 2)
         return -cost.data.numpy()
 
 
