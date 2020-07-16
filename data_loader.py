@@ -2,8 +2,9 @@ from torch.utils.data.dataset import Dataset
 import numpy as np
 from collections import deque
 from itertools import islice
+import matplotlib.pyplot as plt
 #import gym
-
+import time
 class TrajDataset(Dataset):
     def __init__(self, traj_dict, T):
     
@@ -26,7 +27,6 @@ class TrajDataset(Dataset):
         initial_states = []
         input_controls = []
         out_states = []
-
         for i in range(len(states)):
             if news[i]:
                 states_deq.clear()
@@ -39,7 +39,9 @@ class TrajDataset(Dataset):
                 initial_states.append(states_deq[0])
                 input_controls.append(list(islice(controls_deq,0,T-1)))
                 out_states.append(list(islice(states_deq,1, T)))
-
+                #plt.plot(np.array(out_states)[-1, :,0])
+                #plt.scatter(-1, np.array(initial_states)[-1, 0])
+                #plt.show()
         
         return np.array(initial_states), np.array(input_controls), np.array(out_states)
 
@@ -69,9 +71,10 @@ class ImitateDataset(Dataset):
         
         return np.array(initial_states), np.array(pi_controls)
 
+#def gym_imitate(model, pi):
 
-def gym_gen(env, L, pi=None):
-    T = L
+    
+def gym_gen(env, T, pi=None):
     x_dim = len(env.observation_space.low)
     u_dim = len(env.action_space.low)
     states = np.zeros((T, x_dim))
@@ -79,24 +82,36 @@ def gym_gen(env, L, pi=None):
     controls = np.zeros((T,u_dim))
 #    x = env.reset()
     done = False
-    env.seed(10)
+    env.seed(15)
     for i in range(T):
         if i==0 or done:
-            x = env.reset()
+            xt = env.reset()
+            xtt,_,_,_ = env.step(np.zeros(env.action_space.sample().shape))
             news[i] = 1
         # zero control for testing VI
-        #u = np.zeros(env.action_space.sample().shape)
-        #if pi is not None:
-        #    u,_ = pi.predict(x)
+        if pi=='random':
+            u = env.action_space.sample()
+        elif pi is not None:
+            u,_ = pi.predict(xt, xtt)
+        else:
+            u = np.zeros(u_dim)
         #else:
-        u = env.np_random.uniform(-1, 1, size=(1,))#env.action_space.sample()
+        #u = env.env.np_random.uniform(-2, 2, size=(1,))#
         if i%500==0:
             print('samples collected: ', i)
-        print(x)
-        states[i,:] = x
-        controls[i,:] = u
+        #print(x)
+        #time.sleep(0.1)
+        env.render()
+        states[i,:] = xtt
+        controls[i,:] = np.array([u])
         x,r,done,_ = env.step(u)
-        #if i%60==0:
-        #  done = True
-        
+        print(done)
+        xt = xtt
+        xtt = x
+        #if i!=0 and i%100==0:
+        #    done = True
+    #plt.plot(states[:,0])
+    #plt.plot(states[:,1])
+    #plt.show()
+    env.close()
     return {'states':states, 'controls':controls, 'news':news}

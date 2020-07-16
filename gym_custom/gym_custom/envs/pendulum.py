@@ -42,7 +42,7 @@ class QPendulumEnv(gym.Env):
         self.last_u = u # for rendering
         def f(t, y):
             theta, theta_dot = y
-            return [theta_dot, -g/l * np.sin(theta) + 3./(m*l**2)*u]
+            return [theta_dot, -g/l * np.sin(theta) + 3./(m*l**2)*u - 0.2/l*theta_dot]
 
         costs = angle_normalize(th)**2 + .1*thdot**2 + .001*(u**2)
         y_next = integrate.solve_ivp(f, [0.0, dt], [th, thdot])
@@ -52,23 +52,25 @@ class QPendulumEnv(gym.Env):
         newth = y_next.y[0][-1]
         #newthdot = np.clip(newthdot, -self.max_speed, self.max_speed) #pylint: disable=E1111
         self.state = np.array([newth, newthdot])
-        return self.state, -costs, False, {}
+        return self._get_obs(), -costs, False, {}
 
     def reset(self):
-        sign = [-1, 1]
-        theta = np.pi - self.np_random.uniform(low=0.1, high=1./2.*np.pi)
+        #sign = [-1, 1]
+        #theta = np.pi - self.np_random.uniform(low=0.1, high=1./2.*np.pi)
         #theta = np.random.uniform(low=np.pi/3, high=2.*np.pi-np.pi/3)
-        theta = self.np_random.choice(sign)*theta
-        theta_dot = self.np_random.uniform(-1, 1)
-        self.state = np.array([theta, theta_dot])
-        #high = np.array([np.pi, 1])
-        #self.state = self.np_random.uniform(low=-high, high=high)
+        #theta = self.np_random.choice(sign)*theta
+        #theta_dot = self.np_random.uniform(-0.5, 0.5)
+        #self.state = np.array([theta, theta_dot])
+        high = np.array([np.pi, 1])
+        self.state = self.np_random.uniform(low=-high, high=high)
         self.last_u = None
-        return self.state
+        return self._get_obs()
 
     def _get_obs(self):
         theta, thetadot = self.state
-        return np.array([np.sin(theta), -np.cos(theta), thetadot])
+        theta += np.random.normal(0,0.02)
+        thetadot += np.random.normal(0,0.3)
+        return np.array([theta, thetadot])
 
     def render(self, mode='human'):
 
@@ -90,7 +92,7 @@ class QPendulumEnv(gym.Env):
             self.img.add_attr(self.imgtrans)
 
         self.viewer.add_onetime(self.img)
-        self.pole_transform.set_rotation(self.state[0])# + np.pi/2)
+        self.pole_transform.set_rotation(self.state[0] + np.pi/2)
         if self.last_u:
             self.imgtrans.scale = (-self.last_u/2, np.abs(self.last_u)/2)
 

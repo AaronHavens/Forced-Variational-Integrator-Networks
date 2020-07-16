@@ -65,21 +65,32 @@ class ResPredict(nn.Module):
             x_next = self.forward(x, u)
         return x_next.numpy()[0]
     
-    def reward_predict(self, x_, u_):
+    def reward_predict(self, x_, u_, target):
         cost = 0
         x = x_.double()
         u = u_.double()
         with torch.no_grad():
-            cost += torch.norm(x[:, :3], p=2, dim=1)
-            cost += 0.001*torch.norm(u, p=2, dim=1)
+            e = x[:, :3]-torch.from_numpy(target)
+            cost += torch.norm(e, p=2, dim=1)
+            cost += torch.norm(u, p=2, dim=1)
         #with torch.no_grad():
         #    theta = torch.atan2(x[:,1],x[:,0])
         #    cost += torch.pow(theta,2)
         #    cost += 0.1*torch.pow(x[:,2], 2)
         #    cost += 0.001*torch.pow(u[:,0], 2)
         return -cost.data.numpy()
-
-
+    
+    def rollout(self, x, U, H, target):
+        with torch.no_grad():
+            for i in range(H):
+                u = U[:,i]
+                if i == 0:
+                    R = self.reward_predict(x, u, target)
+                else:
+                    R += self.reward_predict(x, u, target)
+                x = self.forward(x, u)
+        return -R
+    
     def forward(self, x, u):
         x_u = torch.cat((x,u), dim=1).float()
         #print(x_u)

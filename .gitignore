@@ -1,0 +1,6 @@
+*.pyc
+*.egg-info/
+__pychache__/
+models/
+trajectories/
+mpc_data/
