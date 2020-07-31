@@ -42,7 +42,8 @@ class PendulumPosEnv(gym.Env):
         self.last_u = u # for rendering
         def f(t, y):
             theta, theta_dot = y
-            return [theta_dot, -g/l * np.sin(theta + np.pi) + 3/(m*l**2)*u]
+            return [theta_dot, -g/l * np.sin(theta + np.pi) + 3/(m*l**2)*u -
+            0.2/l*theta_dot]
 
         costs = angle_normalize(th)**2 + .1*thdot**2 + .001*(u**2)
         y_next = integrate.solve_ivp(f, [0.0, dt], [th, thdot])

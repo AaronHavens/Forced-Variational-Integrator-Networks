@@ -4,7 +4,7 @@ from gym.utils import seeding
 import numpy as np
 from os import path
 import scipy.integrate as integrate
-
+import torch
 class SpringMassEnv(gym.Env):
     metadata = {
         'render.modes' : ['human', 'rgb_array'],
@@ -27,6 +27,27 @@ class SpringMassEnv(gym.Env):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
 
+    
+    def reward(self, model, y__, y_, u_):
+        cost = 0
+        x = model.decoder(y_).double()#x_.double()
+        u = u_.double()
+        with torch.no_grad():
+            e = x[:,0] - 1
+            cost += torch.pow(e, 2)
+            cost += 0.1*torch.pow(x[:,1], 2)
+            cost += 0.001*torch.pow(u[:,0], 2)
+
+        return -cost.data.numpy()
+
+    def reward_test(self, x__, x_, u_):
+        cost = 0
+        e = x_[0] - 1
+        cost += (e)**2
+        cost += 0.1*x_[1]**2
+        cost += 0.001*u_[0]**2
+
+        return -cost
 
 
     def step(self,u):
@@ -42,7 +63,7 @@ class SpringMassEnv(gym.Env):
         self.last_u = u # for rendering
         def f(t, y):
             theta, theta_dot = y
-            return [theta_dot, u/m - k*theta/m]
+            return [theta_dot, u/m - k*theta/m - 0.2/m*theta_dot]
         costs = 0
         #costs = angle_normalize(th)**2 + .1*thdot**2 + .001*(u**2)
         y_next = integrate.solve_ivp(f, [0.0, dt], [th, thdot])

@@ -62,7 +62,6 @@ class QAcrobotEnv(core.Env):
         'video.frames_per_second' : 15
     }
 
-    dt = .1
 
     LINK_LENGTH_1 = 1.  # [m]
     LINK_LENGTH_2 = 1.  # [m]
@@ -88,12 +87,15 @@ class QAcrobotEnv(core.Env):
     def __init__(self):
         self.viewer = None
         high = np.array([1, 1, 1, 1, self.MAX_VEL_1, self.MAX_VEL_2])
+        #high = np.array([np.inf, np.inf, self.MAX_VEL_1, self.MAX_VEL_2])
         low = -high
         self.observation_space = spaces.Box(low=low, high=high, dtype=np.float32)
         self.action_space = spaces.Box(low=np.array([-1]),high=np.array([1]),dtype=np.float32)#spaces.Discrete(3)
         self.state = None
         self.seed()
-
+        self.tau = 0.01
+        self.dt = 0.1
+        self.Nt = int(self.dt//self.tau)
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
@@ -104,6 +106,7 @@ class QAcrobotEnv(core.Env):
         self.state = np.concatenate((theta, theta_dot), axis=0)
         #self.state = self.np_random.uniform(low=-0.1, high=0.1, size=(4,))
         return self._get_ob()
+    
 
     def step(self, a):
         s = self.state
@@ -116,8 +119,11 @@ class QAcrobotEnv(core.Env):
         # Now, augment the state with our force action so it can be passed to
         # _dsdt
         s_augmented = np.append(s, torque)
-        y_next = integrate.solve_ivp(self._dsdt, [0, self.dt], s_augmented)
-        ns = [y_next.y[0][-1], y_next.y[1][-1], y_next.y[2][-1], y_next.y[3][-1], y_next.y[4][-1]]
+        for i in range(self.Nt):
+            y_next = integrate.solve_ivp(self._dsdt, [0, self.tau], s_augmented)
+            s_augmented = [y_next.y[0][-1], y_next.y[1][-1], y_next.y[2][-1], y_next.y[3][-1], y_next.y[4][-1]]
+        
+        ns = s_augmented
         #ns = rk4(self._dsdt, s_augmented, [0, self.dt])
         # only care about final timestep of integration returned by integrator
         #ns = ns[-1]
@@ -131,8 +137,8 @@ class QAcrobotEnv(core.Env):
         # self.s_continuous = ns_continuous[-1] # We only care about the state
         # at the ''final timestep'', self.dt
 
-        #ns[0] = wrap(ns[0], -pi, pi)
-        #ns[1] = wrap(ns[1], -pi, pi)
+        ns[0] = wrap(ns[0], -pi, pi)
+        ns[1] = wrap(ns[1], -pi, pi)
         #ns[2] = bound(ns[2], -self.MAX_VEL_1, self.MAX_VEL_1)
         #ns[3] = bound(ns[3], -self.MAX_VEL_2, self.MAX_VEL_2)
         self.state = ns
@@ -143,10 +149,20 @@ class QAcrobotEnv(core.Env):
     def _get_ob(self):
         s = self.state
         return np.array([np.cos(s[0]), np.sin(s[0]), np.cos(s[1]),np.sin(s[1]), s[2], s[3]])
-
+        #return np.array([s[0], s[1], s[2], s[3]])
     def _terminal(self):
         s = self.state
         return bool(-np.cos(s[0]) - np.cos(s[1] + s[0]) > 100000.)
+    
+    def _dsdt1(self, t, s_augmented):
+        m1 = self.LINK_MASS_1
+        m2 = self.LINK_MASS_2
+        l1 = l2 = self.LINK_LENGTH_1
+        theta1 = s_augmented[0]
+        theta2 = s_augmented[1]
+        dtheta1 = s_augmented[2]
+        dtheta2 = s_augmented[3]
+        a = s_augmented[4]
 
     def _dsdt(self, t, s_augmented):
         m1 = self.LINK_MASS_1
@@ -217,6 +233,34 @@ class QAcrobotEnv(core.Env):
             circ.add_attr(jtransform)
 
         return self.viewer.render(return_rgb_array = mode=='rgb_array')
+    
+    def reward(self, model, y__, y_, u_):
+        cost = 0
+        x = model.decoder(y_).double()#x_.double()
+        u = u_.double()
+        with torch.no_grad():
+            costh = torch.cos(x[:,0])
+            sinth = torch.sin(x[:,0])
+            theta = torch.atan2(sinth,costh)
+
+            cost += torch.pow(theta+np.pi, 2)
+            cost += 0.1*torch.pow(x[:,1], 2)
+            cost += 0.001*torch.pow(u[:,0], 2)
+
+        return -cost.data.numpy()
+
+    def reward_test(self, x__, x_, u_):
+        cost = 0
+        costh = np.cos(x_[0])
+        sinth = np.sin(x_[0])
+        theta = np.arctan2(sinth,costh)
+
+        cost += (theta+np.pi)**2
+        cost += 0.1*x_[1]**2
+        cost += 0.001*u_[0]**2
+
+        return -cost
+
 
     def close(self):
         if self.viewer:

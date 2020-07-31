@@ -4,6 +4,7 @@ from gym.utils import seeding
 import numpy as np
 from os import path
 import scipy.integrate as integrate
+import torch
 
 class QPendulumEnv(gym.Env):
     metadata = {
@@ -27,6 +28,33 @@ class QPendulumEnv(gym.Env):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
 
+    def reward(self, model, y__, y_, u_):
+        cost = 0
+        x = model.decoder(y_).double()#x_.double()
+        u = u_.double()
+        with torch.no_grad():
+            costh = torch.cos(x[:,0])
+            sinth = torch.sin(x[:,0])
+            theta = torch.atan2(sinth,costh)
+            
+            cost += torch.pow(theta+np.pi, 2)
+            cost += 0.1*torch.pow(x[:,1], 2)
+            cost += 0.001*torch.pow(u[:,0], 2)
+        
+        return -cost.data.numpy()
+
+    def reward_test(self, x__, x_, u_):
+        cost = 0
+        costh = np.cos(x_[0])
+        sinth = np.sin(x_[0])
+        theta = np.arctan2(sinth,costh)
+            
+        cost += (theta+np.pi)**2
+        cost += 0.1*x_[1]**2
+        cost += 0.001*u_[0]**2
+        
+        return -cost
+
 
 
     def step(self,u):
@@ -35,9 +63,9 @@ class QPendulumEnv(gym.Env):
         g = 10.
         m = 1.
         l = 1.
-        dt = self.dt
-  
-
+        dt = self.dt#np.random.normal(self.dt, 0.01)
+        
+        
         u = np.clip(u, -self.max_torque, self.max_torque)[0]
         self.last_u = u # for rendering
         def f(t, y):
@@ -68,8 +96,8 @@ class QPendulumEnv(gym.Env):
 
     def _get_obs(self):
         theta, thetadot = self.state
-        theta += np.random.normal(0,0.02)
-        thetadot += np.random.normal(0,0.3)
+        #theta += np.random.normal(0,0.02)
+        #thetadot += np.random.normal(0,0.3)
         return np.array([theta, thetadot])
 
     def render(self, mode='human'):

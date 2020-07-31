@@ -73,8 +73,12 @@ class ImitateDataset(Dataset):
 
 #def gym_imitate(model, pi):
 
-    
-def gym_gen(env, T, pi=None):
+def uhlenbeck_sample(env, u_last, theta=0.05, sigma=0.6):
+    dim = len(u_last)
+    u = (u_last + -theta*u_last + sigma*env.env.np_random.normal(0,1,dim)).astype(np.float32)
+    return np.clip(u, a_min=env.action_space.low, a_max=env.action_space.high)
+
+def gym_gen(env, T, pi=None, stochastic=False, seed=None):
     x_dim = len(env.observation_space.low)
     u_dim = len(env.action_space.low)
     states = np.zeros((T, x_dim))
@@ -82,7 +86,9 @@ def gym_gen(env, T, pi=None):
     controls = np.zeros((T,u_dim))
 #    x = env.reset()
     done = False
-    env.seed(15)
+    u_last = np.zeros(u_dim)
+    if seed is not None:
+        env.seed(seed)
     for i in range(T):
         if i==0 or done:
             xt = env.reset()
@@ -91,8 +97,13 @@ def gym_gen(env, T, pi=None):
         # zero control for testing VI
         if pi=='random':
             u = env.action_space.sample()
+        elif pi=='uhlenbeck':
+            u = uhlenbeck_sample(env, u_last)
+            u_last = u
         elif pi is not None:
             u,_ = pi.predict(xt, xtt)
+            if stochastic:
+                u += env.env.np_random.normal(0,0.2,size=(u_dim))
         else:
             u = np.zeros(u_dim)
         #else:
@@ -100,12 +111,11 @@ def gym_gen(env, T, pi=None):
         if i%500==0:
             print('samples collected: ', i)
         #print(x)
-        #time.sleep(0.1)
+        #time.sleep(0.01)
         env.render()
         states[i,:] = xtt
         controls[i,:] = np.array([u])
         x,r,done,_ = env.step(u)
-        print(done)
         xt = xtt
         xtt = x
         #if i!=0 and i%100==0:

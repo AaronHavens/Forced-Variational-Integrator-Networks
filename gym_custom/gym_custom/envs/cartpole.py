@@ -10,7 +10,7 @@ from gym import spaces, logger
 from gym.utils import seeding
 import numpy as np
 import scipy.integrate as integrate
-
+import torch
 class CartPoleEnv(gym.Env):
     """
     Description:
@@ -55,14 +55,16 @@ class CartPoleEnv(gym.Env):
     }
 
     def __init__(self):
-        self.gravity = 9.8
+        self.gravity = -9.8
         self.masscart = 1.0
         self.masspole = 0.1
         self.total_mass = (self.masspole + self.masscart)
         self.length = 0.5 # actually half the pole's length
-        self.polemass_length = (self.masspole * self.length)
+        self.polemass_length = 2*self.length#(self.masspole * self.length)
         self.force_mag = 10.0
-        self.tau = 0.02  # seconds between state updates
+        self.tau = 0.001 # seconds between state updates
+        self.dt = 0.1
+        self.Nt = int(self.dt//self.tau)
         self.kinematics_integrator = 'euler'
 
         # Angle at which to fail the episode
@@ -70,9 +72,9 @@ class CartPoleEnv(gym.Env):
         self.x_threshold = 2.4
 
         # Angle limit set to 2 * theta_threshold_radians so failing observation is still within bounds
-        high = np.array([
-            self.x_threshold * 2,
-            self.theta_threshold_radians * 2,
+        high = np.array([np.inf, 1,1,
+            #self.x_threshold * 2,
+            #self.theta_threshold_radians * 2,
             np.finfo(np.float32).max,
             np.finfo(np.float32).max])
 
@@ -88,34 +90,70 @@ class CartPoleEnv(gym.Env):
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
+    
+    def f(self, t, y):
+        x = y[0]
+        theta = y[1]
+        x_dot = y[2]
+        theta_dot = y[3]
+        force = y[4]
+        costheta = math.cos(theta)
+        sintheta = math.sin(theta)
+        l = 1
+        g = -self.gravity
+        m1 = self.masscart
+        m2 = self.masspole
+        Mat1 = np.matrix([[costheta, l],[m1 + m2, m2*l*costheta]])
+        Mat2 = np.matrix([[g*sintheta],[force + m2*l*theta_dot**2*sintheta]])
+        frict_vec = np.matrix([[0.1*x_dot],[0.05*theta_dot]])
 
+        ddot = np.linalg.inv(Mat1)*(Mat2-frict_vec)
+        #temp = (force + self.polemass_length * theta_dot * theta_dot * sintheta) / self.total_mass
+        #thetaacc = (self.gravity * sintheta - costheta* temp) / (self.length * (4.0/3.0 - self.masspole * costheta * costheta / self.total_mass))
+        #xacc  = temp - self.polemass_length * thetaacc * costheta / self.total_mass
+        
+        #temp = (force+self.polemass_length*theta_dot**2*sintheta*self.masspole)
+
+        #xacc = -self.gravity*self.polemass_length*costheta*sintheta*self.masspole
+        #xacc += -self.polemass_length*temp
+        #temp2 = self.polemass_length*(-self.total_mass+costheta**2*self.masspole)
+        #xacc = xacc/temp2
+        #thetaacc = -self.gravity*sintheta*(-self.total_mass)
+        #thetaacc += costheta*temp
+        #thetaacc = thetaacc/temp2
+        xacc = ddot[0,0]
+        thetaacc = ddot[1,0]
+        return [x_dot, theta_dot, xacc, thetaacc, 0]
+    
     def step(self, action):
-        assert self.action_space.contains(action), "%r (%s) invalid"%(action, type(action))
+        #assert self.action_space.contains(action), "%r (%s) invalid"%(action, type(action))
         state = self.state
         x, theta, x_dot, theta_dot = state
         force = action#self.force_mag if action==1 else -self.force_mag
-        costheta = math.cos(theta)
-        sintheta = math.sin(theta)
-        temp = (force + self.polemass_length * theta_dot * theta_dot * sintheta) / self.total_mass
-        thetaacc = (self.gravity * sintheta - costheta* temp) / (self.length * (4.0/3.0 - self.masspole * costheta * costheta / self.total_mass))
-        xacc  = temp - self.polemass_length * thetaacc * costheta / self.total_mass
-        def f(t, y):
-            return [x_dot, theta_dot, xacc, thetaacc]
-        
-        y_next = integrate.solve_ivp(f, [0.0, self.tau], 
-                                    [x, theta, x_dot, theta_dot])
-        x_next = y_next.y
+                
+        for i in range(self.Nt):
+            
+            y_next = integrate.solve_ivp(self.f, [0.0, self.tau], 
+                                    [x, theta, x_dot, theta_dot, force])
+            x_next = y_next.y
+            x = x_next[0][-1]
+            theta = x_next[1][-1]
+            x_dot = x_next[2][-1]
+            theta_dot = x_next[3][-1]
+            
+        self.state = (x, theta, x_dot, theta_dot)
         #if self.kinematics_integrator == 'euler':
         #    x  = x + self.tau * x_dot
         #    x_dot = x_dot + self.tau * xacc
-        #   theta = theta + self.tau * theta_dot
+        #    theta = theta + self.tau * theta_dot
         #    theta_dot = theta_dot + self.tau * thetaacc
         #else: # semi-implicit euler
         #    x_dot = x_dot + self.tau * xacc
         #    x  = x + self.tau * x_dot
         #    theta_dot = theta_dot + self.tau * thetaacc
         #    theta = theta + self.tau * theta_dot
-        self.state = (x_next[0][-1], x_next[1][-1], x_next[2][-1], x_next[3][-1])#,ot,theta,theta_dot)
+       #,ot,theta,theta_dot)
+        #self.state = (x, theta, x_dot[0], theta_dot[0])
         done =  x < -self.x_threshold \
                 or x > self.x_threshold \
                 or theta < -self.theta_threshold_radians \
@@ -136,12 +174,47 @@ class CartPoleEnv(gym.Env):
         ############ for testing
         done = False
         ############
-        return np.array(self.state), reward, done, {}
+        return self.get_obs(np.array(self.state)), reward, done, {}
+    
+    def reward(self, model, y__, y_, u_):
+        cost = 0
+        x = model.decoder(y_).double()#x_.double()
+        u = u_.double()
+        with torch.no_grad():
+            #costh = torch.cos(x[:,0])
+            #sinth = torch.sin(x[:,0])
+            #theta = torch.atan2(sinth,costh)
+            
+            theta = torch.atan2(x[:,2],x[:,1])
+            cost += 1*torch.pow(x[:,0],2)
+            cost += 5*torch.pow(theta, 2)
+            cost += 0.1*torch.pow(x[:,3], 2)
+            cost += 0.1*torch.pow(x[:,4], 2)
+            cost += 0.01*torch.pow(u[:,0], 2)
+
+        return -cost.data.numpy()
+
+    def reward_test(self, x__, x_, u_):
+        cost = 0
+        costh = np.cos(x_[0])
+        sinth = np.sin(x_[0])
+        theta = np.arctan2(sinth,costh)
+
+        cost += (theta+np.pi)**2
+        cost += 0.1*x_[1]**2
+        cost += 0.001*u_[0]**2
+
+        return -cost
+
+    def get_obs(self, x):
+        return np.array([x[0], np.cos(x[1]), np.sin(x[1]), x[2], x[3]])
 
     def reset(self):
         self.state = self.np_random.uniform(low=-0.05, high=0.05, size=(4,))
+        self.state[1] = self.np_random.uniform(-np.pi/4,-np.pi/4+2*(np.pi-np.pi/4))
+        self.state[3] = self.np_random.uniform(-1, 1)
         self.steps_beyond_done = None
-        return np.array(self.state)
+        return self.get_obs(np.array(self.state))
 
     def render(self, mode='human'):
         screen_width = 600

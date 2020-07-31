@@ -15,8 +15,8 @@ from core.agent import Agent
 import time
 rc('text', usetex=True)
 
-env = gym.make('QPendulum-v0')
-#env = gym.make('Pendulum-v0')
+#env = gym.make('QPendulum-v0')
+env = gym.make('Pendulum-v0')
 #env_model = gym.make('Pendulum-v0')
 #env = gym.make('Acrobot-v1')
 #env = gym.make('SoftReacher-v0')
@@ -25,14 +25,14 @@ env = gym.make('QPendulum-v0')
 #env = gym.make('CartpoleMod-v0')
 #fname = 'models/vi_acrobot_enc_d2.pt'
 
-fname = 'models/vi_pendulum_noise.pt'
+fname = 'models/res_enc5_pend.pt'
 x_dim = len(env.observation_space.low) 
 u_dim = len(env.action_space.low) 
 
 model = torch.load(fname) 
 #print(model.frout.weight.data)
 #print(model.frout.bias.data)
-H = 300
+H = 100
 env.seed(15)
 pi = CEM(model, 1000, 10, env)
 
