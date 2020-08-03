@@ -18,13 +18,13 @@ load = 0
 train_control = True
 save = 1
 #fname = 'models/res_circ_quan_iter.pt'
-fname = 'models/vv_10_policy_quan.pt'
+fname = 'models/vv_predict_pend_5.pt'
 #max_epochs= 10000
 params ={   'batch_size': 2048,
             'shuffle': True,
             'num_workers' : 1}
 
-#env = gym.make('QPendulum-v0')
+env = gym.make('QPendulum-v0')
 #env = gym.make('Pendulum-v0')
 #env = gym.make('PendulumPos-v0')
 #env = gym.make('Manipulator-v0')
@@ -38,10 +38,10 @@ params ={   'batch_size': 2048,
 #env = gym.make('SpringMassPos-v0')
 #env = gym.make('CoupledMassSpring-v0')
 #env = gym.make('RoboschoolReacher-v1')
-q_dim = 2
-h=0.004
-x_dim = 5#len(env.observation_space.low)
-u_dim = 1#len(env.action_space.low)
+q_dim = 1
+h=0.1
+x_dim = len(env.observation_space.low)
+u_dim = len(env.action_space.low)
 hid_units = 100
 model_type = VI_VV_model
 encoder = True
@@ -91,9 +91,9 @@ traj_dict = None
 #model_pi = torch.load('models/vv_50_cart.pt')
 #pi = CEM(model_pi, 500, 20, env)
 max_epochs = 20000
-#traj_dict = gym_gen(env, (50-1)*5, pi='uhlenbeck', seed=15)
-with open('quansar_policy_10_short_train.pkl', 'rb') as f:
-    traj_dict = pickle.load(f)
+traj_dict = gym_gen(env, (50-1)*5, pi='random', seed=15)
+#with open('quansar_policy_10_short_train.pkl', 'rb') as f:
+#    traj_dict = pickle.load(f)
 model = train_model(traj_dict, model, max_epochs, params, 0)
 #model = torch.load('models/res_5_cart.pt')
 max_epochs = 1000

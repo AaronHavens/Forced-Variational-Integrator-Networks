@@ -65,7 +65,7 @@ class Res_model(nn.Module):
         self.q_dim = q_dim
         self.u_dim = u_dim
         self.f1 = nn.Linear(input_dim+u_dim, 100)
-        #self.f2 = nn.Linear(100, 100)
+        self.f2 = nn.Linear(100, 100)
         self.fout = nn.Linear(100, input_dim, bias=False)
         #self.force1 = nn.Linear(u_dim, 100,bias=False)
         #self.forceout = nn.Linear(100, input_dim, bias=False)
@@ -104,7 +104,7 @@ class Res_model(nn.Module):
     
     def forward(self, q_t_, q_t, u_t=None):
         qu = torch.cat([q_t, u_t], 1)
-        delta = self.fout(torch.relu(self.f1(qu)))
+        delta = self.fout(torch.relu(self.f2(torch.relu(self.f1(qu)))))
         #if u_t is not None:
             #delta += self.forceout(torch.relu(self.force1(u_t)))
             #delta = self.fout(torch.relu(self.f1(qu)))

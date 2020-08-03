@@ -8,18 +8,18 @@ from quad_dynamics import pid
 #import roboschool
 rc('text', usetex=True)
 
-fname1 = 'models/res_5_30_up_cart.pt'
-fname2 = 'models/vv_5_30_up_cart.pt'
+fname1 = 'models/res_predict_cart_20.pt'
+fname2 = 'models/vv_predict_cart_20.pt'
 envname = 'CartpoleMod-v0'
-seed = 15
-H = 50
+seed = 5
+H = 100
 pi_H = 20
-#pi = None
+pi = None
 #pi ='random'
-pi = 'mpc'
-xs1, xs_hat1, us1, cost1 = evaluate(fname1, envname, seed=seed, 
+#pi = 'mpc'
+xs1, xs_hat1, us1, cost1,succ = evaluate(fname1, envname, seed=seed, 
                                     pi=pi, pi_H=pi_H, H=H)
-xs2, xs_hat2, us2, cost2 = evaluate(fname2, envname, seed=seed, 
+xs2, xs_hat2, us2, cost2 ,succ= evaluate(fname2, envname, seed=seed, 
                                     pi=pi, pi_H=pi_H, H=H)
 #ucum1 = np.cumsum(np.linalg.norm(us1,axis=1))
 #ucum2 = np.cumsum(np.linalg.norm(us2,axis=1))

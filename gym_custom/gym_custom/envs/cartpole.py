@@ -103,11 +103,13 @@ class CartPoleEnv(gym.Env):
         g = -self.gravity
         m1 = self.masscart
         m2 = self.masspole
-        Mat1 = np.matrix([[costheta, l],[m1 + m2, m2*l*costheta]])
-        Mat2 = np.matrix([[g*sintheta],[force + m2*l*theta_dot**2*sintheta]])
+        #Mat1 = np.matrix([[costheta, l],[m1 + m2, m2*l*costheta]])
+        #Mat2 = np.matrix([[g*sintheta],[force + m2*l*theta_dot**2*sintheta]])
+        Mat1 = np.matrix([[m1+m2, m2*l*costheta],[m2*l*costheta, m2*l**2]])
+        Mat2 = np.matrix([[-m2*l*theta_dot**2*sintheta],[-m2*g*l*sintheta]])
         frict_vec = np.matrix([[0.1*x_dot],[0.05*theta_dot]])
-
-        ddot = np.linalg.inv(Mat1)*(Mat2-frict_vec)
+        force_vec = np.matrix([[force],[0]])
+        ddot = np.linalg.inv(Mat1)*(-Mat2-frict_vec + force_vec)
         #temp = (force + self.polemass_length * theta_dot * theta_dot * sintheta) / self.total_mass
         #thetaacc = (self.gravity * sintheta - costheta* temp) / (self.length * (4.0/3.0 - self.masspole * costheta * costheta / self.total_mass))
         #xacc  = temp - self.polemass_length * thetaacc * costheta / self.total_mass
