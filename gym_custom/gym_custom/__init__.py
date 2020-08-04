@@ -5,6 +5,16 @@ register(id='ImPendulum-v0',
         max_episode_steps=50,
 )
 
+register(id='PendulumMod-v0',
+        entry_point='gym_custom.envs:PendulumModEnv',
+        max_episode_steps=50,
+)
+
+register(id='PendulumModPos-v0',
+        entry_point='gym_custom.envs:PendulumModPosEnv',
+        max_episode_steps=50,
+)
+
 register(id='QPendulum-v0',
         entry_point='gym_custom.envs:QPendulumEnv',
         max_episode_steps=50,
@@ -15,23 +25,6 @@ register(id='SpringMass-v0',
         max_episode_steps=50,
 )
 
-register(id='PendulumPos-v0',
-        entry_point='gym_custom.envs:PendulumPosEnv',
-        max_episode_steps=60,
-)
-
-register(id='AcrobotPos-v0',
-        entry_point='gym_custom.envs:AcrobotPosEnv',
-)
-
-register(id='QAcrobot-v0',
-        entry_point='gym_custom.envs:QAcrobotEnv',
-        max_episode_steps=50,
-)
-
-register(id='QAcrobotPos-v0',
-        entry_point='gym_custom.envs:QAcrobotPosEnv',
-)
 
 register(id='SpringMassPos-v0',
         entry_point='gym_custom.envs:SpringMassPosEnv',
@@ -42,15 +35,13 @@ register(id='CartpoleMod-v0',
         max_episode_steps=50,
 )
 
-register(id='Quadrotor2D-v0',
-        entry_point='gym_custom.envs:Quadrotor2DEnv',
-        max_episode_steps=100,
+register(id='CartpoleModPos-v0',
+        entry_point='gym_custom.envs:CartPolePosEnv',
+        max_episode_steps=50,
 )
+
 register(id='CoupledMassSpring-v0',
         entry_point='gym_custom.envs:CoupledMassSpringEnv',
         max_episode_steps=50,
 )
-register(id='Manipulator-v0',
-        entry_point='gym_custom.envs:ManipulatorEnv',
-        max_episode_steps=50,
-)
+

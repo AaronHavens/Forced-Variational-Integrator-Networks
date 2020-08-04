@@ -6,11 +6,11 @@ from mpl_toolkits.mplot3d import Axes3D
 from evaluate_utils import evaluate
 rc('text', usetex=True)
 
-fname1 = 'models/vv_10_csm.pt'
+fname1 = 'models/vv_predict_cart.pt'
 fname2 = 'models/vv_alpha_quan.pt'
-envname = 'CoupledMassSpring-v0'
-seed = 15
-H = 100
+envname = 'CartpoleMod-v0'
+seed = 5
+H = 50
 pi_H = 10
 pi = None#'mpc'
 
@@ -18,11 +18,11 @@ pi = None#'mpc'
 xs1, xs_hat1, us1, cost1 = evaluate(fname1, envname, seed=seed, 
                                     pi=pi, pi_H=pi_H, H=H)
 xs2, xs_hat2, us2, cost2 = evaluate(fname1, envname, seed=seed, 
-                                    pi=pi, pi_H=pi_H, H=H, alpha=0)
+                                    pi=pi, pi_H=pi_H, H=H, alpha=0.0)
 xs3, xs_hat3, us3, cost3 = evaluate(fname1, envname, seed=seed, 
-                                    pi=pi, pi_H=pi_H, H=H, alpha=-0.3)
+                                    pi=pi, pi_H=pi_H, H=H, alpha=0.5)
 xs4, xs_hat4, us4, cost4 = evaluate(fname1, envname, seed=seed, 
-                                    pi=pi, pi_H=pi_H, H=H, alpha=2.0)
+                                    pi=pi, pi_H=pi_H, H=H, alpha=1.5)
 
 
 

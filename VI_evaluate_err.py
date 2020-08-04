@@ -1,15 +1,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import rc
-from multi_env import MultiEnv
 from mpl_toolkits.mplot3d import Axes3D
 from evaluate_utils import evaluate
-from quad_dynamics import pid
-#import roboschool
 rc('text', usetex=True)
 
-fname1 = 'models/res_predict_cart_20.pt'
-fname2 = 'models/vv_predict_cart_20.pt'
+fname1 = 'models/res_predict_cart_25.pt'
+fname2 = 'models/vv_predict_cart_25.pt'
 envname = 'CartpoleMod-v0'
 seed = 5
 H = 100
@@ -17,16 +14,14 @@ pi_H = 20
 pi = None
 #pi ='random'
 #pi = 'mpc'
-xs1, xs_hat1, us1, cost1,succ = evaluate(fname1, envname, seed=seed, 
+xs1, xs_hat1, us1, cost1 = evaluate(fname1, envname, seed=seed, 
                                     pi=pi, pi_H=pi_H, H=H)
-xs2, xs_hat2, us2, cost2 ,succ= evaluate(fname2, envname, seed=seed, 
+xs2, xs_hat2, us2, cost2 = evaluate(fname2, envname, seed=seed, 
                                     pi=pi, pi_H=pi_H, H=H)
-#ucum1 = np.cumsum(np.linalg.norm(us1,axis=1))
-#ucum2 = np.cumsum(np.linalg.norm(us2,axis=1))
 
 plt.style.use('ggplot')
 fig = plt.figure(constrained_layout=False)
-gs = fig.add_gridspec(6,2)
+gs = fig.add_gridspec(5,2)
 
 ax1 = fig.add_subplot(gs[:,1])
 #plt.plot(xs[:,0], c='black',label=r'true')
@@ -66,11 +61,11 @@ plt.plot(xs_hat1[:,3], c='r')
 plt.plot(xs_hat2[:,3], c='c')
 plt.ylabel(r'$x \theta$')
 
-#ax7 = fig.add_subplot(gs[4,0])
-#plt.plot(xs1[:,4], c='black')
-#plt.plot(xs_hat1[:,4], c='r')
-#plt.plot(xs_hat2[:,4], c='c')
-#plt.ylabel(r'$\dot \theta$')
+ax7 = fig.add_subplot(gs[4,0])
+plt.plot(xs1[:,4], c='black')
+plt.plot(xs_hat1[:,4], c='r')
+plt.plot(xs_hat2[:,4], c='c')
+plt.ylabel(r'$\dot \theta$')
 
 #ax8 = fig.add_subplot(gs[5,0])
 #plt.plot(xs1[:,5], c='black')

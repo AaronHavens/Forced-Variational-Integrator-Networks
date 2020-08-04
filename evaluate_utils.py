@@ -4,7 +4,6 @@ import gym
 import gym_custom
 from VISV_cem import CEM
 import pickle
-from quad_dynamics import pid
 
 def uhlenbeck_sample(env, u_last, theta=0.1, sigma=0.6):
     dim = len(u_last)
@@ -24,13 +23,10 @@ def evaluate(fname, envname, seed=None, init_state=None, pi=None,
         env.env.alpha = alpha
         model.alpha = alpha
     
-
-
     x_dim = len(env.observation_space.low) 
     u_dim = len(env.action_space.low) 
     if seed is not None:
         env.seed(seed)
-    #mpc = pid(env)#CEM(model, 1000, pi_H, env)
     mpc = CEM(model, 1000, pi_H, env)
     x_t = env.reset()
     if init_state is not None:
@@ -59,7 +55,6 @@ def evaluate(fname, envname, seed=None, init_state=None, pi=None,
     us = np.zeros((H-1, u_dim))
     u_cost = 0
     u_last = np.zeros(u_dim)
-    succ = False
     for i in range(1, H):
         if pi == 'random':
             u = action_sample(env)
@@ -86,17 +81,10 @@ def evaluate(fname, envname, seed=None, init_state=None, pi=None,
         env.render()
         x_t = x_tt
         x_tt = x_next
-        theta = np.arctan2(x_tt[2], x_tt[1])
-        if not succ and np.abs(theta) < 0.1 and np.abs(x_tt[4]) < 0.2:
-            succ = True
-        #x_hat = x_hat_next
-        #print(np.arctan2(x_tt[2], x_tt[1]))
-        #print(np.linalg.norm(x_tt - np.array([1,1,0,0])))
-        print(x_tt)
         print('total cost: ',np.sum(R[:i-1]))
     
     env.close()
-    return xs, xs_hat, us, [np.sum(R), u_cost], succ
+    return xs, xs_hat, us, [np.sum(R), u_cost]
 
 def evaluate_data(fname, dataname, start, stop):
     model = torch.load(fname)
