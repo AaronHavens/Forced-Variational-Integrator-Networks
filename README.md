@@ -20,9 +20,9 @@ python3 VI_train.py --save_name res_pendulum --epochs 10000 --n_traj 5
 --model_type Res_model --env PendulumMod-v0
 ```
 
-plot both results with
+Plot either or both results with
 ```
-python3 evaluate_compare.py --H 100 --model_1  res_pendulum --model_2 vv_pendulum
+python3 VI_evaluate.py --H 100 --model_1  res_pendulum --model_2 vv_pendulum
 ```
 
 To run additional n iterations with CEM control simply add the option --iterations n
