@@ -26,23 +26,6 @@ def VI_SV_loss(model, x0, x, u=None):
 
     return loss
 
-def VI_VV_loss(model, x0, x, u=None):
-    loss = 0
-    H = x.shape[1]
-    q_hat = model.encoder(x0)
-    x_hat = model.decoder(q_hat)
-    loss += torch.mean(torch.pow(x_hat - x0, 2))
-    for i in range(H):
-        if u is not None:
-            q_next_hat = model(q_hat.float(), u[:,i].float()).double()
-        else:
-            q_next_hat = model(q_hat.float()).double()
-        x_next_hat = model.decoder(q_next_hat)
-        loss += torch.mean(torch.pow(x_next_hat - x[:,i], 2))
-        q_hat = q_next_hat
-
-    return loss
-
 class Res_model(nn.Module):
 
     def __init__(self, x_dim, q_dim, n_hid=100, u_dim=0, h=0.1, encoder=False):
@@ -80,14 +63,6 @@ class Res_model(nn.Module):
         qu = torch.cat([q_t, u_t], 1)
         fu = self.forceout(torch.relu(self.force2(torch.relu(self.force1(qu)))))
         delta = self.fout(torch.relu(self.f2(torch.relu(self.f1(q_t)))))
-        #if u_t is not None:
-            #delta += self.forceout(torch.relu(self.force1(u_t)))
-            #delta = self.fout(torch.relu(self.f1(qu)))
-            #delta = self.fout(torch.relu(self.f1(qu)))
-            #x_t = torch.cat((q_t, u_t),axis=1)
-        #else:
-            #x_t = q_t
-        #delta = self.fout(torch.relu(self.f1(x_t)))
         return q_t + delta + fu
  
 class ResPos_model(nn.Module):
@@ -128,19 +103,8 @@ class ResPos_model(nn.Module):
         qu = torch.cat([q_t, u_t], 1)
         fu = self.forceout(torch.relu(self.force2(torch.relu(self.force1(qu)))))
         dq = self.fout(torch.relu(self.f2(torch.relu(self.f1(qq)))))
-        #if u_t is not None:
-            #delta += self.forceout(torch.relu(self.force1(u_t)))
-            #delta = self.fout(torch.relu(self.f1(qu)))
-            #delta = self.fout(torch.relu(self.f1(qu)))
-            #x_t = torch.cat((q_t, u_t),axis=1)
-        #else:
-            #x_t = q_t
-        #delta = self.fout(torch.relu(self.f1(x_t)))
         return q_t + fu + dq
  
-
-
-
 
 class VI_VV_model(nn.Module):
 
@@ -149,8 +113,6 @@ class VI_VV_model(nn.Module):
         if encoder:
             self.encoder = Encoder(x_dim, q_dim, 100)
             self.decoder = Decoder(x_dim, q_dim, 100)
-            #self.encoder = EncoderImage(q_dim)
-            #self.decoder = DecoderImage(q_dim)
         else:
             self.encoder = torch.nn.Identity()
             self.decoder = torch.nn.Identity()
@@ -179,7 +141,6 @@ class VI_VV_model(nn.Module):
         return q_next, q_t, self.decoder(q_next).detach().numpy()[0]
 
     def dUdq(self, qt):
-        #return self.uout(torch.tanh(self.u2(torch.tanh(self.u1(qt)))))
         return self.uout(torch.relu(self.u2(torch.relu(self.u1(qt)))))
 
     def forward(self, q_t_, q_t, u):
@@ -230,7 +191,7 @@ class VI_SV_model(nn.Module):
         self.alpha = np.float(1.0)
         self.friction = True
 
-        self.force1 = nn.Linear(u_dim, n_hid, bias=False)
+        self.force1 = nn.Linear(q_dim+u_dim, n_hid, bias=False)
         self.force2 = nn.Linear(n_hid, n_hid)
         self.forceout = nn.Linear(n_hid, q_dim, bias=False)
         
@@ -254,7 +215,7 @@ class VI_SV_model(nn.Module):
         dV = self.uout(torch.relu(self.u2(torch.relu(self.u1(qtt)))))
         qttt = np.float(2.0)*qtt - qt - self.h2*dV
         
-        qu = u#torch.cat([qtt, u],1)
+        qu = torch.cat([qtt, u],1)
         fu = self.forceout(torch.relu(self.force2(torch.relu(self.force1(qu)))))
         qttt += self.h2*fu
        

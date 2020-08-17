@@ -54,31 +54,59 @@ class PendulumModEnv(gym.Env):
         self.state = np.array([newth, newthdot])
         return self._get_obs(), -costs, False, {}
 
-
+#
+#    def reward(self, model, y__, y_, u_):
+#        cost = 0
+#        x = model.decoder(y_).double()#x_.double()
+#        u = u_.double()
+#        with torch.no_grad():
+#            theta = torch.atan2(x[:,1], x[:,0])
+#
+#            cost += 1*torch.pow(theta, 2)
+#            cost += 0.1*torch.pow(x[:,2], 2)
+#            cost += 0.001*torch.pow(u[:,0], 2)
+#
+#        return -cost.data.numpy()
+#
+#    def reward_test(self, x__, x_, u_):
+#        cost = 0
+#        theta = np.arctan2(x_[1],x_[0])
+#
+#        cost += 1*(theta)**2
+#        cost += 0.1*x_[2]**2
+#        cost += 0.001*u_[0]**2
+#
+#        return -cost
+#
+#
     def reward(self, model, y__, y_, u_):
         cost = 0
         x = model.decoder(y_).double()#x_.double()
         u = u_.double()
         with torch.no_grad():
-            theta = torch.atan2(x[:,1], x[:,0])
+            costh = torch.cos(x[:,0])
+            sinth = torch.sin(x[:,0])
+            theta = torch.atan2(sinth,costh)
 
-            cost += 1*torch.pow(theta, 2)
+            cost += torch.pow(theta, 2)
             cost += 0.1*torch.pow(x[:,2], 2)
+            cost += 0.1*torch.pow(x[:,3], 2)
+            cost += 0.1*torch.pow(x[:,4], 2)
             cost += 0.001*torch.pow(u[:,0], 2)
 
         return -cost.data.numpy()
 
     def reward_test(self, x__, x_, u_):
         cost = 0
-        theta = np.arctan2(x_[1],x_[0])
+        costh = np.cos(x_[0])
+        sinth = np.sin(x_[0])
+        theta = np.arctan2(sinth,costh)
 
-        cost += 1*(theta)**2
-        cost += 0.1*x_[2]**2
+        cost += (theta+np.pi)**2
+        cost += 0.1*x_[1]**2
         cost += 0.001*u_[0]**2
 
         return -cost
-
-
 
     def reset(self):
         high = np.array([np.pi, 5])

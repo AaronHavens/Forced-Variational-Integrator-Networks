@@ -16,7 +16,7 @@ def action_sample(env):
                                 high=env.action_space.high)
 
 def evaluate(fname, envname, seed=None, init_state=None, pi=None,
-                        pi_H=20,H=100, alpha=None):
+                        pi_H=20,H=100, alpha=None, render=False):
     env = gym.make(envname)
     model = torch.load(fname)
     if alpha is not None:
@@ -66,8 +66,6 @@ def evaluate(fname, envname, seed=None, init_state=None, pi=None,
             u = np.zeros(env.action_space.low.shape)
         
         u_last = u
-        u_cost += u[0]**2
-        print('control cost: ', u_cost)
     
         R[i-1] = env.env.reward_test(x_t, x_tt, u)
 
@@ -78,10 +76,10 @@ def evaluate(fname, envname, seed=None, init_state=None, pi=None,
         us[i-1,:] = u
         xs[i,:] = x_next
         xs_hat[i,:] = x_hat_next
-        env.render()
+        if render:
+            env.render()
         x_t = x_tt
         x_tt = x_next
-        print('total cost: ',np.sum(R[:i-1]))
     
     env.close()
     return xs, xs_hat, us, [np.sum(R), u_cost]

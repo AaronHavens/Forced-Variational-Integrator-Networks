@@ -17,7 +17,7 @@ def main():
     parser.add_argument('--render', action='store_true',default=False)
     parser.add_argument('--H', default=100, type=int)
     parser.add_argument('--policy', default=None, type=str)
-    parser.add_argument('--seed', default=None, type=int)
+    parser.add_argument('--seed', default=5, type=int)
     args = parser.parse_args()
 
     envname = args.env
@@ -32,11 +32,13 @@ def main():
     fname1 = 'models/' + args.model1 + '.pt'
     label1 = args.model1
     xs1, xs_hat1, us1, cost1 = evaluate(fname1, envname, seed=seed,
-                                        pi=pi, pi_H=pi_H, H=H)
+                                        pi=pi, pi_H=pi_H, H=H,
+                                        render=args.render)
     if args.model2 is not None:
         fname2 = 'models/' + args.model2 + '.pt'
         xs2, xs_hat2, us2, cost2 = evaluate(fname2, envname, seed=seed,
-                                        pi=pi, pi_H=pi_H, H=H)
+                                        pi=pi, pi_H=pi_H, H=H,
+                                        render=args.render)
         label2 = args.model2
     plt.style.use('ggplot')
     fig = plt.figure(constrained_layout=False)

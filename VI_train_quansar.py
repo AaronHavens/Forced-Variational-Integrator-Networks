@@ -1,7 +1,7 @@
 import torch
 from torch.utils import data
 import torch.optim as optim
-from data_loader import TrajDataset, gym_gen
+from data_loader import TrajDataset, gym_gen_quan
 import VI_model# import VI_VV_loss, VI_VV_model, VI_SV_loss, VI_SV_model, Res_model#, Encoder, Decoder
 from torch.nn.utils import clip_grad_norm
 import gym
@@ -67,10 +67,10 @@ def main():
                 'num_workers' : 1}
     
     env = gym.make(args.env)
-    q_dim = env.env.q_dim
-    h = env.env.dt
-    x_dim = len(env.observation_space.low)
-    u_dim = len(env.action_space.low)
+    q_dim = 2#env.env.q_dim
+    h = 0.04#env.env.dt
+    x_dim = 5#len(env.observation_space.low)
+    u_dim = 1#len(env.action_space.low)
     hid_units = args.n_hid_units
     model_type = getattr(VI_model, args.model_type)
     encoder = args.encoder
@@ -84,15 +84,15 @@ def main():
         model = model_type(x_dim, q_dim, u_dim=u_dim, h=h, encoder=encoder)    
 
     max_epochs = args.epochs
-    traj_dict = gym_gen(env, (traj_length-1)*args.n_traj,
-                        pi='uhlenbeck',seed=args.seed, render=args.render)
+    traj_dict = gym_gen_quan(env, (traj_length-1)*args.n_traj,
+                        pi='random',seed=args.seed, render=args.render)
     model = train_model(traj_dict, model, max_epochs, params, args.save_name, 0)
     
     max_epochs = 1000
     # iterations with mpc policy to refine model 
     for i in range(args.iterations):
-        pi = CEM(model, 500, 20, env)
-        traj_dict_ = gym_gen(env, (traj_length-1)*1, pi=pi, stochastic=True,
+        pi = CEM(model, 100, 15, env)
+        traj_dict_ = gym_gen_quan(env, (traj_length-1)*1, pi=pi, stochastic=True,
                             seed=i, render=args.render)
         traj_dict = append_trajs(traj_dict, traj_dict_)
         model = train_model(traj_dict, model, max_epochs, params, i+1)
