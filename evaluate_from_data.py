@@ -11,17 +11,17 @@ import gym_custom
 import pickle
 rc('text', usetex=True)
 
-model = torch.load('models/real_mpc_test.pt')
+model = torch.load('models/real_mpc_test_test.pt')
 x_dim = 6#len(env.observation_space.low)
 u_dim = 2#len(env.action_space.low)
-n = 15
-start = 29
+n = 10
+start = n*30
 H = 29
 
 xs_hat = np.zeros((H,x_dim))
 r_tot = 0
 
-with open('data_train.pkl', 'rb') as f:
+with open('data_train_test.pkl', 'rb') as f:
     traj_dict = pickle.load(f)
 states = traj_dict['states']
 controls = traj_dict['controls']
