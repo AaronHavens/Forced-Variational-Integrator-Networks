@@ -14,9 +14,9 @@ rc('text', usetex=True)
 model = torch.load('models/real_mpc_test_test.pt')
 x_dim = 6#len(env.observation_space.low)
 u_dim = 2#len(env.action_space.low)
-n = 10
+n = 0
 start = n*30
-H = 29
+H = 150
 
 xs_hat = np.zeros((H,x_dim))
 r_tot = 0
